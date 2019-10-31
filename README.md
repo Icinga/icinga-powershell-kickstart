@@ -19,5 +19,5 @@ $global:IcingaFrameworkKickstartSource = 'https://raw.githubusercontent.com/Lord
 
 $Script = (Invoke-WebRequest -UseBasicParsing -Uri $global:IcingaFrameworkKickstartSource).Content;
 
-Invoke-Command -ScriptBlock ([Scriptblock]::Create($Script));
+Invoke-Command -ScriptBlock ([Scriptblock]::Create($Script); Start-IcingaFrameworkWizard);
 ```
