@@ -80,7 +80,10 @@ function Start-IcingaFrameworkWizard()
 
         Write-Host 'Framework seems to be successfully installed';
         Write-Host 'To use this framework in the future, please initialise it by running the command "Use-Icinga" inside your PowerShell';
-        Write-Host 'To deploy the script on different systems you can run the following command:';
+        Write-Host 'To deploy the script on different systems you can run the following command from within this shell:';
+        Write-Host 'Install-IcingaFrameworkRemoteHost -RemoteHosts <array of hosts>';
+
+        $global:IcingaFrameworkKickstartArguments = $InstallerArguments;
 
         Write-Host ($InstallerArguments | Out-String);
 
@@ -137,7 +140,6 @@ function Expand-IcingaFrameworkArchive()
     } catch {
 
     }
-    
 
     $FolderContent = Get-ChildItem -Path $Destination;
     $Extracted     = '';
@@ -194,8 +196,7 @@ function Expand-IcingaFrameworkArchive()
 function Install-IcingaFrameworkRemoteHost()
 {
     param(
-        [array]$RemoteHosts,
-        $Arguments
+        [array]$RemoteHosts
     );
 
     $RemoteScript = {
@@ -206,13 +207,13 @@ function Install-IcingaFrameworkRemoteHost()
         $global:IcingaFrameworkKickstartSource = $KickstartScript;
 
         $Script = (Invoke-WebRequest -UseBasicParsing -Uri $global:IcingaFrameworkKickstartSource).Content;
-        $Script += "`r`n`r`n Start-IcingaFrameworkWizard @Arguments;";
+        $Script += "`r`n`r`n & Start-IcingaFrameworkWizard @Arguments;";
 
         Invoke-Command -ScriptBlock ([Scriptblock]::Create($Script));
     }
 
     foreach ($HostEntry in $RemoteHosts) {
-        Invoke-Command -ComputerName $HostEntry -ScriptBlock $RemoteScript -ArgumentList $global:IcingaFrameworkKickstartSource, $Arguments;
+        Invoke-Command -ComputerName $HostEntry -ScriptBlock $RemoteScript -ArgumentList $global:IcingaFrameworkKickstartSource, $global:IcingaFrameworkKickstartArguments;
     }
 }
 
