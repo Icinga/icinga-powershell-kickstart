@@ -23,9 +23,9 @@ function Start-IcingaFrameworkWizard()
         if ((Read-IcingaWizardAnswerInput -Prompt 'Do you provide an own repository for the Icinga PowerShell Framework?' -Default 'n').result -eq 1) {
             $branch = (Read-IcingaWizardAnswerInput -Prompt 'Which version to you want to install? (snapshot/STABLE)' -Default 'v').answer
             if ($branch.ToLower() -eq 'snapshot') {
-                $RepositoryUrl = 'https://github.com/LordHepipud/icinga-module-windows/archive/snapshot.zip';
+                $RepositoryUrl = 'https://github.com/Icinga/icinga-powershell-framework/archive/snapshot.zip';
             } else {
-                $RepositoryUrl = 'https://github.com/LordHepipud/icinga-module-windows/archive/master.zip'
+                $RepositoryUrl = 'https://github.com/Icinga/icinga-powershell-framework/archive/master.zip'
             }
         } else {
             $RepositoryUrl = (Read-IcingaWizardAnswerInput -Prompt 'Please enter the path to your custom repository' -Default 'v').answer
@@ -78,7 +78,7 @@ function Start-IcingaFrameworkWizard()
 
     try {
         # First import the module into our current shell
-        Import-Module (Join-Path -Path $ModuleDir -ChildPath 'icinga-module-windows.psm1');
+        Import-Module (Join-Path -Path $ModuleDir -ChildPath 'icinga-powershell-framework.psm1');
         # Try to load the framework now
         Use-Icinga;
 
