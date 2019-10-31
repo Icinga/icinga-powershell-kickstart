@@ -1,8 +1,9 @@
 function Start-IcingaFrameworkWizard()
 {
     param(
-        $RepositoryUrl      = $null,
-        $ModuleDirectory    = $null,
+        $RepositoryUrl       = $null,
+        $ModuleDirectory     = $null,
+        $AllowUpdate         = $null,
         [switch]$SkipWizard
     );
 
@@ -29,7 +30,7 @@ function Start-IcingaFrameworkWizard()
         } else {
             $RepositoryUrl = (Read-IcingaWizardAnswerInput -Prompt 'Please enter the path to your custom repository' -Default 'v').answer
         }
-        $InstallerArguments += "-RepositoryUrl '$RepositoryUrl'";
+        $InstallerArguments += "RepositoryUrl '$RepositoryUrl'";
     }
 
     if ([string]::IsNullOrEmpty($ModuleDirectory)) {
@@ -58,10 +59,10 @@ function Start-IcingaFrameworkWizard()
             break;
         }
         $ModuleDirectory = $ModulePath[$ChoosenIndex];
-        $InstallerArguments += "-ModuleDirectory '$ModuleDirectory'";
+        $InstallerArguments += "ModuleDirectory '$ModuleDirectory'";
     }
 
-    $InstallerArguments += "-SkipWizard";
+    $InstallerArguments += "SkipWizard";
 
     $DownloadPath = (Join-Path -Path $ENv:TEMP -ChildPath 'icinga-powershell-framework-zip');
     Write-Host ([string]::Format('Downloading Icinga Framework into "{0}"', $DownloadPath));
@@ -69,7 +70,10 @@ function Start-IcingaFrameworkWizard()
     Invoke-WebRequest -UseBasicParsing -Uri $RepositoryUrl -OutFile $DownloadPath;
 
     Write-Host ([string]::Format('Installing module into "{0}"', ($ModuleDirectory)));
-    $ModuleDir = Expand-IcingaFrameworkArchive -Path $DownloadPath -Destination ($ModuleDirectory);
+    $ModuleDir = Expand-IcingaFrameworkArchive -Path $DownloadPath -Destination $ModuleDirectory -AllowUpdate $AllowUpdate;
+    if ($null -ne $ModuleDir) {
+        $InstallerArguments += "AllowUpdate 1";
+    }
     Unblock-IcingaFramework -Path $ModuleDir;
 
     try {
@@ -80,8 +84,6 @@ function Start-IcingaFrameworkWizard()
 
         Write-Host 'Framework seems to be successfully installed';
         Write-Host 'To use this framework in the future, please initialise it by running the command "Use-Icinga" inside your PowerShell';
-        Write-Host 'To deploy the script on different systems you can run the following command from within this shell:';
-        Write-Host 'Install-IcingaFrameworkRemoteHost -RemoteHosts <array of hosts>';
 
         $global:IcingaFrameworkKickstartArguments = $InstallerArguments;
 
@@ -93,6 +95,12 @@ function Start-IcingaFrameworkWizard()
             Write-Host 'Starting Icinga Agent installation wizard';
             Start-IcingaAgentInstallWizard;
         }
+
+        # Todo: Preparation for a later version of the module
+        <#if ((Read-IcingaWizardAnswerInput -Prompt 'Do you want to install the framework on different hosts?' -Default 'y').result -eq 1) {
+            $HostList = (Read-IcingaWizardAnswerInput -Prompt 'Please enter the hosts seperated by ","' -Default 'v').answer;
+            Install-IcingaFrameworkRemoteHost -RemoteHosts $HostList.Split(',');
+        }#>
     } catch {
         Write-Host ([string]::Format('Unable to load the module. Please check your PowerShell execution policies for possible problems. Error: {0}', $_.Exception));
     }
@@ -128,7 +136,8 @@ function Expand-IcingaFrameworkArchive()
 {
     param(
         $Path,
-        $Destination
+        $Destination,
+        $AllowUpdate = $null
     );
 
     Add-Type -AssemblyName System.IO.Compression.FileSystem;
@@ -161,28 +170,35 @@ function Expand-IcingaFrameworkArchive()
     $OldBackupDir = (Join-Path -Path $NewDirectory -ChildPath 'previous');
 
     if ((Test-Path $NewDirectory)) {
-        if ((Read-IcingaWizardAnswerInput -Prompt 'It seems a version of the module is already installed. Would you like to upgrade it?' -Default 'y').result -eq 1) {
-            if ((Test-Path (Join-Path -Path $NewDirectory -ChildPath 'cache'))) {
-                Write-Host 'Importing cache into new module version...';
-                Copy-Item -Path (Join-Path -Path $NewDirectory -ChildPath 'cache') -Destination $ExtractDir -Force -Recurse;
+        if ($null -eq $AllowUpdate) {
+            if ((Read-IcingaWizardAnswerInput -Prompt 'It seems a version of the module is already installed. Would you like to upgrade it?' -Default 'y').result -eq 0) {
+                return $null;
             }
-            if ((Test-Path (Join-Path -Path $NewDirectory -ChildPath 'custom'))) {
-                Write-Host 'Importing custom modules into new module version...';
-                Copy-Item -Path (Join-Path -Path $NewDirectory -ChildPath 'custom') -Destination $ExtractDir -Force -Recurse;
-            }
-            Write-Host 'Creating backup directory';
-            if ((Test-Path $OldBackupDir)) {
-                Write-Host 'Importing old backups into new module version...';
-                Move-Item -Path $OldBackupDir -Destination $ExtractDir;
-            } else {
-                Write-Host 'No previous backups found. Creating new backup space';
-                New-Item -Path $BackupDir -ItemType Container | Out-Null;
-            }
-            Write-Host 'Moving old module into backup directory';
-            Move-Item -Path $NewDirectory -Destination (Join-Path -Path $BackupDir -ChildPath (Get-Date -Format "MM-dd-yyyy-HH-mm-ffff"));
-        } else {
+            $AllowUpdate = $TRUE;
+        }
+
+        if ($AllowUpdate -eq $FALSE) {
             return $null;
         }
+
+        if ((Test-Path (Join-Path -Path $NewDirectory -ChildPath 'cache'))) {
+            Write-Host 'Importing cache into new module version...';
+            Copy-Item -Path (Join-Path -Path $NewDirectory -ChildPath 'cache') -Destination $ExtractDir -Force -Recurse;
+        }
+        if ((Test-Path (Join-Path -Path $NewDirectory -ChildPath 'custom'))) {
+            Write-Host 'Importing custom modules into new module version...';
+            Copy-Item -Path (Join-Path -Path $NewDirectory -ChildPath 'custom') -Destination $ExtractDir -Force -Recurse;
+        }
+        Write-Host 'Creating backup directory';
+        if ((Test-Path $OldBackupDir)) {
+            Write-Host 'Importing old backups into new module version...';
+            Move-Item -Path $OldBackupDir -Destination $ExtractDir;
+        } else {
+            Write-Host 'No previous backups found. Creating new backup space';
+            New-Item -Path $BackupDir -ItemType Container | Out-Null;
+        }
+        Write-Host 'Moving old module into backup directory';
+        Move-Item -Path $NewDirectory -Destination (Join-Path -Path $BackupDir -ChildPath (Get-Date -Format "MM-dd-yyyy-HH-mm-ffff"));
     }
 
     Write-Host 'Installing new module version';
@@ -211,7 +227,7 @@ function Install-IcingaFrameworkRemoteHost()
     }
 
     foreach ($HostEntry in $RemoteHosts) {
-        Invoke-Command -ComputerName $HostEntry -ScriptBlock $RemoteScript -ArgumentList $global:IcingaFrameworkKickstartSource, $global:IcingaFrameworkKickstartArguments;
+        Invoke-Command -ComputerName $HostEntry -ScriptBlock $RemoteScript -ArgumentList @( $global:IcingaFrameworkKickstartSource, $global:IcingaFrameworkKickstartArguments );
     }
 }
 
@@ -250,3 +266,5 @@ function Read-IcingaWizardAnswerInput()
         'answer' = $answer;
     }
 }
+
+Start-IcingaFrameworkWizard
