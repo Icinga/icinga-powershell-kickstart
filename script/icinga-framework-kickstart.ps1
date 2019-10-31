@@ -83,7 +83,7 @@ function Start-IcingaFrameworkWizard()
         Use-Icinga;
 
         Write-Host 'Framework seems to be successfully installed';
-        Write-Host 'To use this framework in the future, please initialise it by running the command "Use-Icinga" inside your PowerShell';
+        Write-Host 'To use this framework in the future, please initialize it by running the command "Use-Icinga" inside your PowerShell';
 
         $global:IcingaFrameworkKickstartArguments = $InstallerArguments;
 
