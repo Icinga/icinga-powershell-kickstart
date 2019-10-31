@@ -206,8 +206,9 @@ function Install-IcingaFrameworkRemoteHost()
         $global:IcingaFrameworkKickstartSource = $KickstartScript;
 
         $Script = (Invoke-WebRequest -UseBasicParsing -Uri $global:IcingaFrameworkKickstartSource).Content;
+        $Script += "`r`n`r`n Start-IcingaFrameworkWizard @Arguments;";
 
-        Invoke-Command -ScriptBlock ([Scriptblock]::Create($Script); Start-IcingaFrameworkWizard @Arguments);
+        Invoke-Command -ScriptBlock ([Scriptblock]::Create($Script));
     }
 
     foreach ($HostEntry in $RemoteHosts) {
