@@ -1,59 +1,75 @@
 function Start-IcingaFrameworkWizard()
 {
+    param(
+        $RepositoryUrl      = $null,
+        $ModuleDirectory    = $null,
+        [switch]$SkipWizard
+    );
+
     if ((Test-AdministrativeShell) -eq $FALSE) {
         Write-Host 'Please run this script from an administrative shell.';
         return;
     }
+
+    [array]$InstallerArguments = @();
+
     # Ensure we ca communicate with GitHub
     [Net.ServicePointManager]::SecurityProtocol = "tls12, tls11";
     # Disable the status bar as it will slow down the progress
     $ProgressPreference = "SilentlyContinue";
 
-    $RepositoryUrl = ''
-
-    if ((Read-IcingaWizardAnswerInput -Prompt 'Do you provide an own repository for the Icinga PowerShell Framework?' -Default 'n').result -eq 1) {
-        $branch = (Read-IcingaWizardAnswerInput -Prompt 'Which version to you want to install? (snapshot/STABLE)' -Default 'v').answer
-        if ($branch.ToLower() -eq 'snapshot') {
-            $RepositoryUrl = 'https://github.com/LordHepipud/icinga-module-windows/archive/snapshot.zip';
+    if ([string]::IsNullOrEmpty($RepositoryUrl)) {
+        if ((Read-IcingaWizardAnswerInput -Prompt 'Do you provide an own repository for the Icinga PowerShell Framework?' -Default 'n').result -eq 1) {
+            $branch = (Read-IcingaWizardAnswerInput -Prompt 'Which version to you want to install? (snapshot/STABLE)' -Default 'v').answer
+            if ($branch.ToLower() -eq 'snapshot') {
+                $RepositoryUrl = 'https://github.com/LordHepipud/icinga-module-windows/archive/snapshot.zip';
+            } else {
+                $RepositoryUrl = 'https://github.com/LordHepipud/icinga-module-windows/archive/master.zip'
+            }
         } else {
-            $RepositoryUrl = 'https://github.com/LordHepipud/icinga-module-windows/archive/master.zip'
+            $RepositoryUrl = (Read-IcingaWizardAnswerInput -Prompt 'Please enter the path to your custom repository' -Default 'v').answer
         }
-    } else {
-        $RepositoryUrl = (Read-IcingaWizardAnswerInput -Prompt 'Please enter the path to your custom repository' -Default 'v').answer
+        $InstallerArguments += "-RepositoryUrl '$RepositoryUrl'";
     }
 
-    $ModulePath   = ($Env:PSModulePath).Split(';');
-    $DefaultIndex = $ModulePath.IndexOf('C:\Program Files\WindowsPowerShell\Modules');
-    $Question     = [string]::Format('The following directories are available for modules:{0}', "`r`n");
-    $Index        = 0;
-    $ChoosenIndex = 0;
-    foreach ($entry in $ModulePath) {
-        if ([int]$DefaultIndex -eq [int]$Index) {
-            $Question = [string]::Format('{0}[{1}]: {2} (Recomended){3}', $Question, $Index, $entry, "`r`n");
-        } else {
-            $Question = [string]::Format('{0}[{1}]: {2}{3}', $Question, $Index, $entry, "`r`n");
+    if ([string]::IsNullOrEmpty($ModuleDirectory)) {
+        $ModulePath   = ($Env:PSModulePath).Split(';');
+        $DefaultIndex = $ModulePath.IndexOf('C:\Program Files\WindowsPowerShell\Modules');
+        $Question     = [string]::Format('The following directories are available for modules:{0}', "`r`n");
+        $Index        = 0;
+        $ChoosenIndex = 0;
+        foreach ($entry in $ModulePath) {
+            if ([int]$DefaultIndex -eq [int]$Index) {
+                $Question = [string]::Format('{0}[{1}]: {2} (Recommended){3}', $Question, $Index, $entry, "`r`n");
+            } else {
+                $Question = [string]::Format('{0}[{1}]: {2}{3}', $Question, $Index, $entry, "`r`n");
+            }
+            $Index   += 1;
         }
-        $Index   += 1;
+
+        $Question = [string]::Format('{0}Where do you want to install the module into? ([0-{1}])', $Question, ($ModulePath.Count - 1));
+        
+        while ($TRUE) {
+            $ChoosenIndex = (Read-IcingaWizardAnswerInput -Prompt $Question -Default 'v').answer
+            if ([string]::IsNullOrEmpty($ChoosenIndex) -Or $null -eq $ModulePath[$ChoosenIndex]) {
+                Write-Host ([string]::Format('Invalid Option. Please chossen between [0-{0}]', ($ModulePath.Count - 1))) -ForegroundColor Red;
+                continue;
+            }
+            break;
+        }
+        $ModuleDirectory = $ModulePath[$ChoosenIndex];
+        $InstallerArguments += "-ModuleDirectory '$ModuleDirectory'";
     }
 
-    $Question = [string]::Format('{0}Where do you want to install the module into? ([0-{1}])', $Question, ($ModulePath.Count - 1));
-    
-    while ($TRUE) {
-        $ChoosenIndex = (Read-IcingaWizardAnswerInput -Prompt $Question -Default 'v').answer
-        if ([string]::IsNullOrEmpty($ChoosenIndex) -Or $null -eq $ModulePath[$ChoosenIndex]) {
-            Write-Host ([string]::Format('Invalid Option. Please chossen between [0-{0}]', ($ModulePath.Count - 1))) -ForegroundColor Red;
-            continue;
-        }
-        break;
-    }
+    $InstallerArguments += "-SkipWizard";
 
     $DownloadPath = (Join-Path -Path $ENv:TEMP -ChildPath 'icinga-powershell-framework-zip');
     Write-Host ([string]::Format('Downloading Icinga Framework into "{0}"', $DownloadPath));
 
     Invoke-WebRequest -UseBasicParsing -Uri $RepositoryUrl -OutFile $DownloadPath;
 
-    Write-Host ([string]::Format('Installing module into "{0}"', ($ModulePath[$ChoosenIndex])));
-    $ModuleDir = Expand-IcingaFrameworkArchive -Path $DownloadPath -Destination ($ModulePath[$ChoosenIndex]);
+    Write-Host ([string]::Format('Installing module into "{0}"', ($ModuleDirectory)));
+    $ModuleDir = Expand-IcingaFrameworkArchive -Path $DownloadPath -Destination ($ModuleDirectory);
     Unblock-IcingaFramework -Path $ModuleDir;
 
     try {
@@ -64,6 +80,13 @@ function Start-IcingaFrameworkWizard()
 
         Write-Host 'Framework seems to be successfully installed';
         Write-Host 'To use this framework in the future, please initialise it by running the command "Use-Icinga" inside your PowerShell';
+        Write-Host 'To deploy the script on different systems you can run the following command:';
+
+        Write-Host ($InstallerArguments | Out-String);
+
+        if ($SkipWizard) {
+            return;
+        }
 
         if ((Read-IcingaWizardAnswerInput -Prompt 'Do you want to run the Icinga Agent Install Wizard now? You can do this later by running the command "Start-IcingaAgentInstallWizard"' -Default 'y').result -eq 1) {
             Write-Host 'Starting Icinga Agent installation wizard';
@@ -168,6 +191,30 @@ function Expand-IcingaFrameworkArchive()
     return $NewDirectory;
 }
 
+function Install-IcingaFrameworkRemoteHost()
+{
+    param(
+        [array]$RemoteHosts,
+        $Arguments
+    );
+
+    $RemoteScript = {
+        param($KickstartScript, $Arguments);
+        [Net.ServicePointManager]::SecurityProtocol = "tls12, tls11";
+        $ProgressPreference = "SilentlyContinue";
+
+        $global:IcingaFrameworkKickstartSource = $KickstartScript;
+
+        $Script = (Invoke-WebRequest -UseBasicParsing -Uri $global:IcingaFrameworkKickstartSource).Content;
+
+        Invoke-Command -ScriptBlock ([Scriptblock]::Create($Script); Start-IcingaFrameworkWizard @Arguments);
+    }
+
+    foreach ($HostEntry in $RemoteHosts) {
+        Invoke-Command -ComputerName $HostEntry -ScriptBlock $RemoteScript -ArgumentList $global:IcingaFrameworkKickstartSource, $Arguments;
+    }
+}
+
 function Read-IcingaWizardAnswerInput()
 {
     param(
@@ -203,5 +250,3 @@ function Read-IcingaWizardAnswerInput()
         'answer' = $answer;
     }
 }
-
-Start-IcingaFrameworkWizard;
