@@ -152,10 +152,10 @@ function Expand-IcingaFrameworkArchive()
     $Extracted     = '';
 
     foreach ($entry in $FolderContent) {
-        if ($entry -eq 'icinga-module-windows') {
+        if ($entry -eq 'icinga-powershell-framework') {
             return (Join-Path -Path $Destination -ChildPath $entry);
         }
-        if ($entry -like 'icinga-module-windows*') {
+        if ($entry -like 'icinga-powershell-framework*') {
             $Extracted = $entry;
         }
     }
@@ -164,7 +164,7 @@ function Expand-IcingaFrameworkArchive()
         return $null;
     }
 
-    $NewDirectory = (Join-Path -Path $Destination -ChildPath 'icinga-module-windows');
+    $NewDirectory = (Join-Path -Path $Destination -ChildPath 'icinga-powershell-framework');
     $ExtractDir   = (Join-Path -Path $Destination -ChildPath $Extracted);
     $BackupDir    = (Join-Path -Path $ExtractDir -ChildPath 'previous');
     $OldBackupDir = (Join-Path -Path $NewDirectory -ChildPath 'previous');
