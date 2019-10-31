@@ -85,8 +85,6 @@ function Start-IcingaFrameworkWizard()
 
         $global:IcingaFrameworkKickstartArguments = $InstallerArguments;
 
-        Write-Host ($InstallerArguments | Out-String);
-
         if ($SkipWizard) {
             return;
         }
