@@ -267,5 +267,3 @@ function Read-IcingaWizardAnswerInput()
         'answer' = $answer;
     }
 }
-
-Start-IcingaFrameworkWizard
