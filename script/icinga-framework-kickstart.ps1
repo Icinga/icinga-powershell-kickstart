@@ -93,6 +93,7 @@ function Start-IcingaFrameworkWizard()
 
         if ((Read-IcingaWizardAnswerInput -Prompt 'Do you want to run the Icinga Agent Install Wizard now? You can do this later by running the command "Start-IcingaAgentInstallWizard"' -Default 'y').result -eq 1) {
             Write-Host 'Starting Icinga Agent installation wizard';
+            Write-Host '=======';
             Start-IcingaAgentInstallWizard;
         }
 
