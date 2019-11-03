@@ -15,7 +15,7 @@ Once loaded, it will be executed and asks all required questions on how and wher
 [Net.ServicePointManager]::SecurityProtocol = "tls12, tls11";
 $ProgressPreference = "SilentlyContinue";
 
-$global:IcingaFrameworkKickstartSource = 'https://raw.githubusercontent.com/Icinga/icinga-powershell-kickstart/master/script/icinga-framework-kickstart.ps1';
+$global:IcingaFrameworkKickstartSource = 'https://raw.githubusercontent.com/Icinga/icinga-powershell-kickstart/master/script/icinga-powershell-kickstart.ps1';
 
 $Script = (Invoke-WebRequest -UseBasicParsing -Uri $global:IcingaFrameworkKickstartSource).Content;
 $Script += "`r`n`r`n Start-IcingaFrameworkWizard;";
