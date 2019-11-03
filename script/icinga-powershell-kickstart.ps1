@@ -29,6 +29,7 @@ function Start-IcingaFrameworkWizard()
                 $FrameworkUrl  = $LatestRelease.Replace('/releases/tag/', '/archive/');
                 $Tag           = $FrameworkUrl.Split('/')[-1];
                 $FrameworkUrl  = [string]::Format('{0}/{1}.zip', $FrameworkUrl, $Tag);
+            }
         } else {
             $RepositoryUrl = (Read-IcingaWizardAnswerInput -Prompt 'Please enter the path to your custom repository' -Default 'v').answer
         }
