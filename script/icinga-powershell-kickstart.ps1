@@ -23,12 +23,12 @@ function Start-IcingaFrameworkWizard()
         if ((Read-IcingaWizardAnswerInput -Prompt 'Do you provide an own repository for the Icinga PowerShell Framework?' -Default 'n').result -eq 1) {
             $branch = (Read-IcingaWizardAnswerInput -Prompt 'Which version to you want to install? (snapshot/STABLE)' -Default 'v').answer;
             if ($branch.ToLower() -eq 'snapshot') {
-                $FrameworkUrl  = 'https://github.com/Icinga/icinga-powershell-framework/archive/master.zip';
+                $RepositoryUrl = 'https://github.com/Icinga/icinga-powershell-framework/archive/master.zip';
             } else {
                 $LatestRelease = (Invoke-WebRequest -Uri 'https://github.com/Icinga/icinga-powershell-framework/releases/latest' -UseBasicParsing).BaseResponse.ResponseUri.AbsoluteUri;
-                $FrameworkUrl  = $LatestRelease.Replace('/releases/tag/', '/archive/');
-                $Tag           = $FrameworkUrl.Split('/')[-1];
-                $FrameworkUrl  = [string]::Format('{0}/{1}.zip', $FrameworkUrl, $Tag);
+                $RepositoryUrl = $LatestRelease.Replace('/releases/tag/', '/archive/');
+                $Tag           = $RepositoryUrl.Split('/')[-1];
+                $RepositoryUrl = [string]::Format('{0}/{1}.zip', $RepositoryUrl, $Tag);
             }
         } else {
             $RepositoryUrl = (Read-IcingaWizardAnswerInput -Prompt 'Please enter the path to your custom repository' -Default 'v').answer
