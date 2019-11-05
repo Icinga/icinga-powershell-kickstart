@@ -76,16 +76,18 @@ function Start-IcingaFrameworkWizard()
     $ModuleDir = Expand-IcingaFrameworkArchive -Path $DownloadPath -Destination $ModuleDirectory -AllowUpdate $AllowUpdate;
     if ($null -ne $ModuleDir) {
         $InstallerArguments += "AllowUpdate 1";
-    }
-    if ((Test-Path $ModuleDir)) {
         Unblock-IcingaFramework -Path $ModuleDir;
+        try {
+            # First import the module into our current shell
+            if ((Test-Path $ModuleDir)) {
+                Import-Module (Join-Path -Path $ModuleDir -ChildPath 'icinga-powershell-framework.psm1');
+            }
+        } catch {
+            # Todo: Log output
+        }
     }
 
     try {
-        # First import the module into our current shell
-        if ((Test-Path $ModuleDir)) {
-            Import-Module (Join-Path -Path $ModuleDir -ChildPath 'icinga-powershell-framework.psm1');
-        }
         # Try to load the framework now
         Use-Icinga;
 
