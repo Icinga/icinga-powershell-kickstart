@@ -8,7 +8,7 @@ function Start-IcingaFrameworkWizard()
     );
 
     if ((Test-AdministrativeShell) -eq $FALSE) {
-        Write-Host 'Please run this script from an administrative shell.';
+        Write-IcingaConsoleError 'Please run this script from an administrative shell.';
         return;
     }
 
@@ -21,7 +21,7 @@ function Start-IcingaFrameworkWizard()
 
     if ([string]::IsNullOrEmpty($RepositoryUrl)) {
         if ((Read-IcingaWizardAnswerInput -Prompt 'Do you provide an own repository for the Icinga PowerShell Framework?' -Default 'n').result -eq 1) {
-            $branch = (Read-IcingaWizardAnswerInput -Prompt 'Which version to you want to install? (snapshot/STABLE)' -Default 'v').answer;
+            $branch = (Read-IcingaWizardAnswerInput -Prompt 'Which version of the Icinga PowerShell Framework do you want to install? (release/snapshot)' -DefaultInput 'release' -Default 'v').answer;
             if ($branch.ToLower() -eq 'snapshot') {
                 $RepositoryUrl = 'https://github.com/Icinga/icinga-powershell-framework/archive/master.zip';
             } else {
@@ -31,7 +31,7 @@ function Start-IcingaFrameworkWizard()
                 $RepositoryUrl = [string]::Format('{0}/{1}.zip', $RepositoryUrl, $Tag);
             }
         } else {
-            $RepositoryUrl = (Read-IcingaWizardAnswerInput -Prompt 'Please enter the path to your custom repository' -Default 'v').answer
+            $RepositoryUrl = (Read-IcingaWizardAnswerInput -Prompt 'Please enter the full path of the custom repository for the Icinga PowerShell Framework (location of zip file)' -Default 'v').answer
         }
         $InstallerArguments += "RepositoryUrl '$RepositoryUrl'";
     }
@@ -39,7 +39,7 @@ function Start-IcingaFrameworkWizard()
     if ([string]::IsNullOrEmpty($ModuleDirectory)) {
         $ModulePath   = ($Env:PSModulePath).Split(';');
         $DefaultIndex = $ModulePath.IndexOf('C:\Program Files\WindowsPowerShell\Modules');
-        $Question     = [string]::Format('The following directories are available for modules:{0}', "`r`n");
+        $Question     = [string]::Format('The following directories are available for installing PowerShell modules into:{0}', "`r`n");
         $Index        = 0;
         $ChoosenIndex = 0;
         foreach ($entry in $ModulePath) {
@@ -51,12 +51,12 @@ function Start-IcingaFrameworkWizard()
             $Index   += 1;
         }
 
-        $Question = [string]::Format('{0}Where do you want to install the module into? ([0-{1}])', $Question, ($ModulePath.Count - 1));
+        $Question = [string]::Format('{0}Where do you want to install the Icinga PowerShell Framework into? ([0-{1}])', $Question, ($ModulePath.Count - 1));
         
         while ($TRUE) {
-            $ChoosenIndex = (Read-IcingaWizardAnswerInput -Prompt $Question -Default 'v').answer
+            $ChoosenIndex = (Read-IcingaWizardAnswerInput -Prompt $Question -DefaultInput $DefaultIndex -Default 'v').answer
             if ([string]::IsNullOrEmpty($ChoosenIndex) -Or $null -eq $ModulePath[$ChoosenIndex]) {
-                Write-Host ([string]::Format('Invalid Option. Please chossen between [0-{0}]', ($ModulePath.Count - 1))) -ForegroundColor Red;
+                Write-IcingaConsoleError ([string]::Format('Invalid option. Please choose between [0-{0}]', ($ModulePath.Count - 1)));
                 continue;
             }
             break;
@@ -68,11 +68,11 @@ function Start-IcingaFrameworkWizard()
     $InstallerArguments += "SkipWizard";
 
     $DownloadPath = (Join-Path -Path $ENv:TEMP -ChildPath 'icinga-powershell-framework-zip');
-    Write-Host ([string]::Format('Downloading Icinga Framework into "{0}"', $DownloadPath));
+    Write-IcingaConsoleNotice ([string]::Format('Downloading Icinga PowerShell Framework into "{0}"', $DownloadPath));
 
     Invoke-WebRequest -UseBasicParsing -Uri $RepositoryUrl -OutFile $DownloadPath;
 
-    Write-Host ([string]::Format('Installing module into "{0}"', ($ModuleDirectory)));
+    Write-IcingaConsoleNotice ([string]::Format('Installing Icinga PowerShell Framework into "{0}"', ($ModuleDirectory)));
     $ModuleDir = Expand-IcingaFrameworkArchive -Path $DownloadPath -Destination $ModuleDirectory -AllowUpdate $AllowUpdate;
     if ($null -ne $ModuleDir) {
         $InstallerArguments += "AllowUpdate 1";
@@ -91,8 +91,8 @@ function Start-IcingaFrameworkWizard()
         # Try to load the framework now
         Use-Icinga;
 
-        Write-Host 'Framework seems to be successfully installed';
-        Write-Host 'To use this framework in the future, please initialize it by running the command "Use-Icinga" inside your PowerShell';
+        Write-IcingaConsoleNotice 'Icinga PowerShell Framework seems to be successfully installed';
+        Write-IcingaConsoleNotice 'To use the Icinga PowerShell Framework in the future, please initialize it by running the command "Use-Icinga" inside your PowerShell';
 
         $global:IcingaFrameworkKickstartArguments = $InstallerArguments;
 
@@ -100,9 +100,9 @@ function Start-IcingaFrameworkWizard()
             return;
         }
 
-        if ((Read-IcingaWizardAnswerInput -Prompt 'Do you want to run the Icinga Agent Install Wizard now? You can do this later by running the command "Start-IcingaAgentInstallWizard"' -Default 'y').result -eq 1) {
-            Write-Host 'Starting Icinga Agent installation wizard';
-            Write-Host '=======';
+        if ((Read-IcingaWizardAnswerInput -Prompt 'Do you want to run the Icinga Agent installation wizard now? (You can do this later by running the command "Start-IcingaAgentInstallWizard")' -Default 'y').result -eq 1) {
+            Write-IcingaConsoleNotice 'Starting Icinga Agent installation wizard';
+            Write-IcingaConsoleNotice '=======';
             Start-IcingaAgentInstallWizard;
         }
 
@@ -112,7 +112,7 @@ function Start-IcingaFrameworkWizard()
             Install-IcingaFrameworkRemoteHost -RemoteHosts $HostList.Split(',');
         }#>
     } catch {
-        Write-Host ([string]::Format('Unable to load the module. Please check your PowerShell execution policies for possible problems. Error: {0}', $_.Exception));
+        Write-IcingaConsoleError ([string]::Format('Unable to load the Icinga PowerShell Framework. Please check your PowerShell execution policies for possible problems. Error: {0}', $_.Exception));
     }
 }
 
@@ -134,11 +134,11 @@ function Unblock-IcingaFramework()
     );
 
     if ([string]::IsNullOrEmpty($Path)) {
-        Write-Host 'Icinga Framework Module directory was not found';
+        Write-IcingaConsoleNotice 'Icinga PowerShell Framework directory was not found';
         return;
     }
 
-    Write-Host 'Unblocking Icinga Framework Files';
+    Write-IcingaConsoleNotice 'Unblocking Icinga PowerShell Framework files';
     Get-ChildItem -Path $Path -Recurse | Unblock-File; 
 }
 
@@ -181,7 +181,7 @@ function Expand-IcingaFrameworkArchive()
 
     if ((Test-Path $NewDirectory)) {
         if ($null -eq $AllowUpdate) {
-            if ((Read-IcingaWizardAnswerInput -Prompt 'It seems a version of the module is already installed. Would you like to upgrade it?' -Default 'y').result -eq 0) {
+            if ((Read-IcingaWizardAnswerInput -Prompt 'It seems that the Icinga PowerShell Framework is already installed. Would you like to update it?' -Default 'y').result -eq 0) {
                 return $null;
             }
             $AllowUpdate = $TRUE;
@@ -192,26 +192,26 @@ function Expand-IcingaFrameworkArchive()
         }
 
         if ((Test-Path (Join-Path -Path $NewDirectory -ChildPath 'cache'))) {
-            Write-Host 'Importing cache into new module version...';
+            Write-IcingaConsoleNotice 'Importing cache into new Icinga PowerShell Framework version...';
             Copy-Item -Path (Join-Path -Path $NewDirectory -ChildPath 'cache') -Destination $ExtractDir -Force -Recurse;
         }
         if ((Test-Path (Join-Path -Path $NewDirectory -ChildPath 'custom'))) {
-            Write-Host 'Importing custom modules into new module version...';
+            Write-IcingaConsoleNotice 'Importing custom modules into new Icinga PowerShell Framework version...';
             Copy-Item -Path (Join-Path -Path $NewDirectory -ChildPath 'custom') -Destination $ExtractDir -Force -Recurse;
         }
-        Write-Host 'Creating backup directory';
+        Write-IcingaConsoleNotice 'Creating backup directory';
         if ((Test-Path $OldBackupDir)) {
-            Write-Host 'Importing old backups into new module version...';
+            Write-IcingaConsoleNotice 'Importing old backups into new Icinga PowerShell Framework version...';
             Move-Item -Path $OldBackupDir -Destination $ExtractDir;
         } else {
-            Write-Host 'No previous backups found. Creating new backup space';
+            Write-IcingaConsoleNotice 'No previous backups found. Creating new backup space';
             New-Item -Path $BackupDir -ItemType Container | Out-Null;
         }
-        Write-Host 'Moving old module into backup directory';
+        Write-IcingaConsoleNotice 'Moving old Icinga PowerShell Framework into backup directory';
         Move-Item -Path $NewDirectory -Destination (Join-Path -Path $BackupDir -ChildPath (Get-Date -Format "MM-dd-yyyy-HH-mm-ffff"));
     }
 
-    Write-Host 'Installing new module version';
+    Write-IcingaConsoleNotice 'Installing new Icinga PowerShell Framework version';
     Move-Item -Path (Join-Path -Path $Destination -ChildPath $Extracted) -Destination $NewDirectory;
 
     return $NewDirectory;
@@ -246,7 +246,9 @@ function Read-IcingaWizardAnswerInput()
     param(
         $Prompt,
         [ValidateSet("y","n","v")]
-        $Default
+        $Default,
+        $DefaultInput   = '',
+        [switch]$Secure
     );
 
     $DefaultAnswer = '';
@@ -255,14 +257,26 @@ function Read-IcingaWizardAnswerInput()
         $DefaultAnswer = ' (Y/n)';
     } elseif ($Default -eq 'n') {
         $DefaultAnswer = ' (y/N)';
+    } elseif ($Default -eq 'v') {
+        if ([string]::IsNullOrEmpty($DefaultInput) -eq $FALSE) {
+            $DefaultAnswer = [string]::Format(' (Defaults: "{0}")', $DefaultInput);
+        }
     }
 
-    $answer = (Read-Host -Prompt ([string]::Format('{0}{1}', $Prompt, $DefaultAnswer))).ToLower();
+    if (-Not $Secure) {
+        $answer = Read-Host -Prompt ([string]::Format('{0}{1}', $Prompt, $DefaultAnswer));
+    } else {
+        $answer = Read-Host -Prompt ([string]::Format('{0}{1}', $Prompt, $DefaultAnswer)) -AsSecureString;
+    }
 
     if ($Default -ne 'v') {
+        $answer = $answer.ToLower();
+
         $returnValue = 0;
         if ([string]::IsNullOrEmpty($answer) -Or $answer -eq $Default) {
             $returnValue = 1;
+        } else {
+            $returnValue = 0;
         }
 
         return @{
@@ -271,8 +285,71 @@ function Read-IcingaWizardAnswerInput()
         }
     }
 
+    if ([string]::IsNullOrEmpty($answer)) {
+        $answer = $DefaultInput;
+    }
+
     return @{
         'result' = 2;
         'answer' = $answer;
     }
+}
+
+function Write-IcingaConsoleOutput()
+{
+    param (
+        [string]$Message,
+        [array]$Objects,
+        [ValidateSet('Black', 'DarkBlue', 'DarkGreen', 'DarkCyan', 'DarkRed', 'DarkMagenta', 'DarkYellow', 'Gray', 'DarkGray', 'Blue', 'Green', 'Cyan', 'Red', 'Magenta', 'Yellow', 'White')]
+        [string]$ForeColor = 'White',
+        [string]$Severity  = 'Notice'
+    );
+
+    $OutputMessage = $Message;
+    [int]$Index    = 0;
+
+    foreach ($entry in $Objects) {
+
+        $OutputMessage = $OutputMessage.Replace(
+            [string]::Format('{0}{1}{2}', '{', $Index, '}'),
+            $entry
+        );
+        $Index++;
+    }
+
+    if ([string]::IsNullOrEmpty($Severity) -eq $FALSE) {
+        Write-Host '[' -NoNewline;
+        Write-Host $Severity -NoNewline -ForegroundColor $ForeColor;
+        Write-Host ']: ' -NoNewline;
+    }
+
+    Write-Host $OutputMessage;
+}
+
+function Write-IcingaConsoleNotice()
+{
+    param (
+        [string]$Message,
+        [array]$Objects
+    );
+
+    Write-IcingaConsoleOutput `
+        -Message $Message `
+        -Objects $Objects `
+        -ForeColor 'Green' `
+        -Severity 'Notice';
+}
+
+function Write-IcingaConsoleError()
+{
+    param (
+        [string]$Message,
+        [array]$Objects
+    );
+
+    Write-IcingaConsoleOutput `
+        -Message $Message `
+        -Objects $Objects `
+        -ForeColor 'Red' `
+        -Severity 'Error';
 }
