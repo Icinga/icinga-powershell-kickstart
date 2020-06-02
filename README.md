@@ -22,3 +22,10 @@ $Script += "`r`n`r`n Start-IcingaFrameworkWizard;";
 
 Invoke-Command -ScriptBlock ([Scriptblock]::Create($Script));
 ```
+
+## Documentation
+
+Please take a look on the following content for installation and documentation:
+
+* [Introduction](doc/01-Introduction.md)
+* [Changelog](doc/31-Changelog.md)
