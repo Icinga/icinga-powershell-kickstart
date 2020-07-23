@@ -12,6 +12,10 @@ function Start-IcingaFrameworkWizard()
         return;
     }
 
+    if ((Test-PowerShellExecutionPolicy) -eq $FALSE) {
+        return;
+    }
+
     [array]$InstallerArguments = @();
 
     # Ensure we ca communicate with GitHub
@@ -340,6 +344,20 @@ function Write-IcingaConsoleNotice()
         -Severity 'Notice';
 }
 
+function Write-IcingaConsoleWarning()
+{
+    param (
+        [string]$Message,
+        [array]$Objects
+    );
+
+    Write-IcingaConsoleOutput `
+        -Message $Message `
+        -Objects $Objects `
+        -ForeColor 'Yellow' `
+        -Severity 'Error';
+}
+
 function Write-IcingaConsoleError()
 {
     param (
@@ -352,4 +370,29 @@ function Write-IcingaConsoleError()
         -Objects $Objects `
         -ForeColor 'Red' `
         -Severity 'Error';
+}
+
+function Test-PowerShellExecutionPolicy()
+{
+    $UserPolicy    = Get-ExecutionPolicy -Scope CurrentUser;
+    $MachinePolicy = Get-ExecutionPolicy -Scope LocalMachine;
+
+    if ($UserPolicy -eq 'Undefined' -And $MachinePolicy -eq 'Undefined') {
+        Write-IcingaConsoleError 'Your user and machine exeuction policies are configured as "Undefined". Please review your internal PowerShell execution policies and run this script again. Further details can be found at https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.security/set-executionpolicy?view=powershell-6';
+        return $FALSE;
+    }
+
+    if ($UserPolicy -eq 'Restricted' -Or $MachinePolicy -eq 'Restricted') {
+        Write-IcingaConsoleError 'Your user and/or machine exeuction policies are configured as "Restricted". Please review your internal PowerShell execution policies and run this script again. Further details can be found at https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.security/set-executionpolicy?view=powershell-6';
+        return $FALSE;
+    }
+
+    if ($UserPolicy -eq 'AllSigned' -Or $MachinePolicy -eq 'AllSigned' -Or $UserPolicy -eq 'RemoteSigned' -or $MachinePolicy -eq 'RemoteSigned') {
+        Write-IcingaConsoleWarning 'Your user and/or machine exeuction policies are configured as "AllSigned" or "RemoteSigned". This means you can only execute PowerShell scripts and modules which are signed by a trusted publisher. Please have a look at https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_signing?view=powershell-7 for further details about how to sign modules and scripts to ensure Icinga for Windows is running properly on your system.';
+        return $TRUE;
+    }
+
+    Write-IcingaConsoleNotice 'PowerShell Execution-Policies are configured to run Scripts and/or Modules.';
+
+    return $TRUE;
 }
