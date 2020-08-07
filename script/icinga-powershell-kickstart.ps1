@@ -56,7 +56,7 @@ function Start-IcingaFrameworkWizard()
         }
 
         $Question = [string]::Format('{0}Where do you want to install the Icinga PowerShell Framework into? ([0-{1}])', $Question, ($ModulePath.Count - 1));
-        
+
         while ($TRUE) {
             $ChoosenIndex = (Read-IcingaWizardAnswerInput -Prompt $Question -DefaultInput $DefaultIndex -Default 'v').answer
             if ([string]::IsNullOrEmpty($ChoosenIndex) -Or $null -eq $ModulePath[$ChoosenIndex]) {
@@ -143,7 +143,7 @@ function Unblock-IcingaFramework()
     }
 
     Write-IcingaConsoleNotice 'Unblocking Icinga PowerShell Framework files';
-    Get-ChildItem -Path $Path -Recurse | Unblock-File; 
+    Get-ChildItem -Path $Path -Recurse | Unblock-File;
 }
 
 function Expand-IcingaFrameworkArchive()
@@ -249,7 +249,7 @@ function Read-IcingaWizardAnswerInput()
 {
     param(
         $Prompt,
-        [ValidateSet("y","n","v")]
+        [ValidateSet("y", "n", "v")]
         $Default,
         $DefaultInput   = '',
         [switch]$Secure
