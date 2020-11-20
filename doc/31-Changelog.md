@@ -12,6 +12,7 @@ Released closed milestones can be found on [GitHub](https://github.com/Icinga/ic
 ### Enhancement
 
 * Adds check for current configured PowerShell execution policies
+* [#6](https://github.com/Icinga/icinga-powershell-kickstart/pull/6) Updates Kickstart wizard to use the Icinga PowerShell Framework updating tools in case the Framework is already installed on systems
 
 ### Bugfixes
 

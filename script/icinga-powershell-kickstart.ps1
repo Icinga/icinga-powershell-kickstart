@@ -16,6 +16,30 @@ function Start-IcingaFrameworkWizard()
         return;
     }
 
+    # In case the Icinga PowerShell Framework is already installed, we should use the Cmdlets and features
+    # provided from there instead of using the kickstart handlings
+    if ((Get-Command -ListAvailable -Name 'Use-Icinga' -ErrorAction SilentlyContinue)) {
+        Write-IcingaConsoleNotice 'Icinga PowerShell Framework is already installed. Using Framework functions for kickstarter.';
+        Write-IcingaConsoleNotice 'Loading Icinga PowerShell Framework.';
+        Use-Icinga;
+
+        if ($null -eq $AllowUpdate -Or $AllowUpdate -eq $TRUE) {
+            Install-IcingaFrameworkUpdate -FrameworkUrl $RepositoryUrl;
+        } else {
+            Write-IcingaConsoleNotice 'Skipping update of Icinga PowerShell Framework based on user input.';
+        }
+
+        if ($SkipWizard -eq $FALSE -And (Read-IcingaWizardAnswerInput -Prompt 'Do you want to run the Icinga Agent installation wizard now? (You can do this later by running the command "Start-IcingaAgentInstallWizard")' -Default 'y').result -eq 1) {
+            Write-IcingaConsoleNotice 'Starting Icinga Agent installation wizard';
+            Write-IcingaConsoleNotice '=======';
+            Start-IcingaAgentInstallWizard;
+            return;
+        }
+
+        Write-IcingaConsoleNotice 'Skipping Icinga PowerShell Framework installation wizard. Kickstart script completed.';
+        return;
+    }
+
     [array]$InstallerArguments = @();
 
     # Ensure we ca communicate with GitHub
