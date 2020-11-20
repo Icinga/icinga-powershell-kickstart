@@ -9,7 +9,13 @@ Released closed milestones can be found on [GitHub](https://github.com/Icinga/ic
 
 ## 1.2.0 (pending)
 
+### Enhancement
+
 * Adds check for current configured PowerShell execution policies
+
+### Bugfixes
+
+* [#7](https://github.com/Icinga/icinga-powershell-kickstart/pull/7) Fixes crash with Icinga PowerShell Framework v1.3.0
 
 ## 1.1.0 (2020-06-02)
 

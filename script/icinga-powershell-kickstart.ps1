@@ -84,7 +84,7 @@ function Start-IcingaFrameworkWizard()
         try {
             # First import the module into our current shell
             if ((Test-Path $ModuleDir)) {
-                Import-Module (Join-Path -Path $ModuleDir -ChildPath 'icinga-powershell-framework.psm1');
+                Import-Module (Join-Path -Path $ModuleDir -ChildPath 'icinga-powershell-framework') -Global -Force;
             }
         } catch {
             # Todo: Log output
