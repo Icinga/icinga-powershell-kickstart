@@ -69,7 +69,7 @@ function Start-IcingaFrameworkWizard()
         $DefaultIndex = $ModulePath.IndexOf('C:\Program Files\WindowsPowerShell\Modules');
         $Question     = [string]::Format('The following directories are available for installing PowerShell modules into:{0}', "`r`n");
         $Index        = 0;
-        $ChoosenIndex = 0;
+        $ChosenIndex  = 0;
         foreach ($entry in $ModulePath) {
             if ([int]$DefaultIndex -eq [int]$Index) {
                 $Question = [string]::Format('{0}[{1}]: {2} (Recommended){3}', $Question, $Index, $entry, "`r`n");
@@ -82,14 +82,14 @@ function Start-IcingaFrameworkWizard()
         $Question = [string]::Format('{0}Where do you want to install the Icinga PowerShell Framework into? ([0-{1}])', $Question, ($ModulePath.Count - 1));
 
         while ($TRUE) {
-            $ChoosenIndex = (Read-IcingaWizardAnswerInput -Prompt $Question -DefaultInput $DefaultIndex -Default 'v').answer
-            if ([string]::IsNullOrEmpty($ChoosenIndex) -Or $null -eq $ModulePath[$ChoosenIndex]) {
+            $ChosenIndex = (Read-IcingaWizardAnswerInput -Prompt $Question -DefaultInput $DefaultIndex -Default 'v').answer
+            if ([string]::IsNullOrEmpty($ChosenIndex) -Or $null -eq $ModulePath[$ChosenIndex]) {
                 Write-IcingaConsoleError ([string]::Format('Invalid option. Please choose between [0-{0}]', ($ModulePath.Count - 1)));
                 continue;
             }
             break;
         }
-        $ModuleDirectory = $ModulePath[$ChoosenIndex];
+        $ModuleDirectory = $ModulePath[$ChosenIndex];
         $InstallerArguments += "ModuleDirectory '$ModuleDirectory'";
     }
 
@@ -136,7 +136,7 @@ function Start-IcingaFrameworkWizard()
 
         # Todo: Preparation for a later version of the module
         <#if ((Read-IcingaWizardAnswerInput -Prompt 'Do you want to install the framework on different hosts?' -Default 'y').result -eq 1) {
-            $HostList = (Read-IcingaWizardAnswerInput -Prompt 'Please enter the hosts seperated by ","' -Default 'v').answer;
+            $HostList = (Read-IcingaWizardAnswerInput -Prompt 'Please enter the hosts separated by ","' -Default 'v').answer;
             Install-IcingaFrameworkRemoteHost -RemoteHosts $HostList.Split(',');
         }#>
     } catch {
@@ -402,17 +402,17 @@ function Test-PowerShellExecutionPolicy()
     $MachinePolicy = Get-ExecutionPolicy -Scope LocalMachine;
 
     if ($UserPolicy -eq 'Undefined' -And $MachinePolicy -eq 'Undefined') {
-        Write-IcingaConsoleError 'Your user and machine exeuction policies are configured as "Undefined". Please review your internal PowerShell execution policies and run this script again. Further details can be found at https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.security/set-executionpolicy?view=powershell-6';
+        Write-IcingaConsoleError 'Your user and machine execution policies are configured as "Undefined". Please review your internal PowerShell execution policies and run this script again. Further details can be found at https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.security/set-executionpolicy?view=powershell-6';
         return $FALSE;
     }
 
     if ($UserPolicy -eq 'Restricted' -Or $MachinePolicy -eq 'Restricted') {
-        Write-IcingaConsoleError 'Your user and/or machine exeuction policies are configured as "Restricted". Please review your internal PowerShell execution policies and run this script again. Further details can be found at https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.security/set-executionpolicy?view=powershell-6';
+        Write-IcingaConsoleError 'Your user and/or machine execution policies are configured as "Restricted". Please review your internal PowerShell execution policies and run this script again. Further details can be found at https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.security/set-executionpolicy?view=powershell-6';
         return $FALSE;
     }
 
     if ($UserPolicy -eq 'AllSigned' -Or $MachinePolicy -eq 'AllSigned' -Or $UserPolicy -eq 'RemoteSigned' -or $MachinePolicy -eq 'RemoteSigned') {
-        Write-IcingaConsoleWarning 'Your user and/or machine exeuction policies are configured as "AllSigned" or "RemoteSigned". This means you can only execute PowerShell scripts and modules which are signed by a trusted publisher. Please have a look at https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_signing?view=powershell-7 for further details about how to sign modules and scripts to ensure Icinga for Windows is running properly on your system.';
+        Write-IcingaConsoleWarning 'Your user and/or machine execution policies are configured as "AllSigned" or "RemoteSigned". This means you can only execute PowerShell scripts and modules which are signed by a trusted publisher. Please have a look at https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_signing?view=powershell-7 for further details about how to sign modules and scripts to ensure Icinga for Windows is running properly on your system.';
         return $TRUE;
     }
 
